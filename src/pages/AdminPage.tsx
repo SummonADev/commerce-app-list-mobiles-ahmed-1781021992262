@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
-import { DollarSign, Package, Store as StoreIcon, ShoppingBag } from 'lucide-react';
+import { DollarSign, Package, Store as StoreIcon, ShoppingBag, Users } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth';
 import { formatCurrency, PLATFORM_FEE_PERCENT } from '@/lib/constants';
 
 export default function AdminPage() {
   const { vendors, products, orders } = useStore();
+  const { user } = useAuth();
 
   const totals = useMemo(() => {
     const gross = orders.reduce((s, o) => s + o.total, 0);
@@ -31,14 +33,30 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-2xl font-bold text-slate-900">Admin dashboard</h1>
-      <p className="text-slate-600 mt-1">Platform-wide metrics and commission tracking.</p>
+      <div className="flex items-start justify-between flex-wrap gap-2 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Admin dashboard</h1>
+          <p className="text-slate-600 mt-1">Platform-wide metrics and commission tracking.</p>
+        </div>
+        {user && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            <Users className="w-4 h-4 text-amber-600" />
+            <span className="text-sm font-medium text-amber-800">{user.name}</span>
+            <span className="text-xs text-amber-600">· Admin</span>
+          </div>
+        )}
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat icon={<StoreIcon className="w-5 h-5" />} label="Vendors" value={String(vendors.length)} />
         <Stat icon={<Package className="w-5 h-5" />} label="Products" value={String(products.length)} />
         <Stat icon={<ShoppingBag className="w-5 h-5" />} label="Orders" value={String(orders.length)} />
-        <Stat icon={<DollarSign className="w-5 h-5" />} label={`Platform commission (${PLATFORM_FEE_PERCENT}%)`} value={formatCurrency(totals.fees)} highlight />
+        <Stat
+          icon={<DollarSign className="w-5 h-5" />}
+          label={`Platform commission (${PLATFORM_FEE_PERCENT}%)`}
+          value={formatCurrency(totals.fees)}
+          highlight
+        />
       </div>
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -67,6 +85,13 @@ export default function AdminPage() {
                   <td className="px-4 py-3 text-right font-medium text-indigo-600">{formatCurrency(fee)}</td>
                 </tr>
               ))}
+              {vendors.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-slate-500 text-sm">
+                    No vendors yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -76,12 +101,16 @@ export default function AdminPage() {
             <h2 className="font-semibold text-slate-900">Recent orders</h2>
           </div>
           <div className="divide-y divide-slate-100">
-            {orders.length === 0 && <p className="px-5 py-10 text-center text-slate-500 text-sm">No orders yet.</p>}
+            {orders.length === 0 && (
+              <p className="px-5 py-10 text-center text-slate-500 text-sm">No orders yet.</p>
+            )}
             {orders.slice(0, 8).map((o) => (
               <div key={o.id} className="px-5 py-3 flex items-center justify-between text-sm">
                 <div>
                   <p className="font-medium text-slate-900">{o.buyerName}</p>
-                  <p className="text-xs text-slate-500">{new Date(o.createdAt).toLocaleString()} · {o.items.length} item(s)</p>
+                  <p className="text-xs text-slate-500">
+                    {new Date(o.createdAt).toLocaleString()} · {o.items.length} item(s)
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium">{formatCurrency(o.total)}</p>
@@ -92,14 +121,60 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      {/* All vendors list */}
+      <div className="mt-6 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200">
+          <h2 className="font-semibold text-slate-900">All vendors</h2>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {vendors.length === 0 && (
+            <p className="px-5 py-10 text-center text-slate-500 text-sm">No vendors registered yet.</p>
+          )}
+          {vendors.map((v) => (
+            <div key={v.id} className="px-5 py-3 flex items-center gap-4">
+              <img src={v.logo} alt={v.storeName} className="w-10 h-10 rounded-xl bg-slate-100" />
+              <div className="flex-1">
+                <p className="font-medium text-slate-900">{v.storeName}</p>
+                <p className="text-xs text-slate-500">{v.name} · {v.email}</p>
+              </div>
+              <p className="text-xs text-slate-400">Joined {v.joinedAt}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-function Stat({ icon, label, value, highlight }: { icon: any; label: string; value: string; highlight?: boolean }) {
+function Stat({
+  icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className={'rounded-2xl border p-5 ' + (highlight ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white border-transparent' : 'bg-white border-slate-200')}>
-      <div className={'inline-flex items-center justify-center w-9 h-9 rounded-xl ' + (highlight ? 'bg-white/20' : 'bg-indigo-50 text-indigo-600')}>{icon}</div>
+    <div
+      className={
+        'rounded-2xl border p-5 ' +
+        (highlight
+          ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white border-transparent'
+          : 'bg-white border-slate-200')
+      }
+    >
+      <div
+        className={
+          'inline-flex items-center justify-center w-9 h-9 rounded-xl ' +
+          (highlight ? 'bg-white/20' : 'bg-indigo-50 text-indigo-600')
+        }
+      >
+        {icon}
+      </div>
       <p className={'mt-3 text-xs ' + (highlight ? 'text-indigo-100' : 'text-slate-500')}>{label}</p>
       <p className="text-2xl font-bold mt-1">{value}</p>
     </div>

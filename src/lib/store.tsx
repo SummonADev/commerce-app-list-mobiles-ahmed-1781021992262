@@ -22,7 +22,7 @@ type StoreCtx = {
 
 const Ctx = createContext<StoreCtx | null>(null);
 
-export function StoreProvider({ children }: { children: any }) {
+export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [vendors, setVendors] = useLocalStorage<Vendor[]>('mh_vendors', seedVendors);
   const [products, setProducts] = useLocalStorage<Product[]>('mh_products', seedProducts);
   const [cart, setCart] = useLocalStorage<CartItem[]>('mh_cart', []);

@@ -6,6 +6,7 @@ export type Vendor = {
   logo: string;
   rating: number;
   joinedAt: string;
+  userId?: string;
 };
 
 export type Product = {
@@ -39,3 +40,9 @@ export type Order = {
 };
 
 export type Role = 'buyer' | 'vendor' | 'admin';
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  role: Role;
+};
